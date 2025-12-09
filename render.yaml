@@ -2,6 +2,7 @@ services:
   - type: worker
     name: telegram-downloader-bot
     env: python
+    pythonVersion: "3.11.0"  # ← این خط رو اضافه کن
     region: frankfurt
     plan: free
     buildCommand: pip install -r requirements.txt
