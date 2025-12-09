@@ -1,7 +1,6 @@
 import os
 import logging
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters
 
 # تنظیمات
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -54,7 +53,7 @@ def main():
     
     # اضافه کردن هندلرها
     dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.text, handle_message))
+    dp.add_handler(MessageHandler(filters.Filters.text, handle_message))
     
     # مدیریت خطا
     dp.add_error_handler(error)
