@@ -1,11 +1,15 @@
 import os
 import logging
+import asyncio
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters
 
 # تنظیمات
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))  # ✅ اینجا صفر عددی
+
+# مدیریت ADMIN_ID
+admin_id_str = os.getenv("ADMIN_ID", "").strip()
+ADMIN_ID = int(admin_id_str) if admin_id_str else 0
 
 # لاگینگ
 logging.basicConfig(
@@ -13,20 +17,24 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def start(update: Update, context):
     """دستور /start"""
-    await update.message.reply_text("🤖 ربات فعال شد! لینک بفرستید.")
+    update.message.reply_text("🤖 ربات فعال شد! لینک بفرستید.")
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def handle_message(update: Update, context):
     """پردازش پیام"""
     user_id = update.effective_user.id
     
+    if ADMIN_ID == 0:
+        update.message.reply_text("⚠️ ADMIN_ID تنظیم نشده!")
+        return
+        
     if user_id != ADMIN_ID:
-        await update.message.reply_text("⛔ دسترسی ندارید!")
+        update.message.reply_text("⛔ دسترسی ندارید!")
         return
     
     text = update.message.text
-    await update.message.reply_text(f"📩 دریافت شد: {text[:50]}...")
+    update.message.reply_text(f"📩 دریافت شد: {text[:50]}...")
 
 def main():
     """تابع اصلی"""
@@ -34,11 +42,23 @@ def main():
         print("❌ BOT_TOKEN تنظیم نشده!")
         return
     
-    app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT, handle_message))
+    # ساخت آپدیت‌کننده
+    updater = Updater(BOT_TOKEN, use_context=True)
     
-    print("🤖 ربات در حال اجرا...")
-    app.run_polling()
+    # گرفتن دیسپچر
+    dp = updater.dispatcher
+    
+    # اضافه کردن هندلرها
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(filters.TEXT, handle_message))
+    
+    print(f"🤖 ربات در حال اجرا... ADMIN_ID: {ADMIN_ID}")
+    
+    # شروع پولینگ
+    updater.start_polling()
+    
+    # اجرا تا Ctrl+C
+    updater.idle()
 
 if __name__ == "__main__":
     main()
