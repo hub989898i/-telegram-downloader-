@@ -1,6 +1,7 @@
 import os
 import logging
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # تنظیمات
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -14,30 +15,25 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-logger = logging.getLogger(__name__)
 
-def start(update, context):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """دستور /start"""
-    update.message.reply_text("🤖 ربات فعال شد! لینک بفرستید.")
+    await update.message.reply_text("🤖 ربات فعال شد! لینک بفرستید.")
 
-def handle_message(update, context):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """پردازش پیام"""
-    user_id = update.message.from_user.id
+    user_id = update.effective_user.id
     
     if ADMIN_ID == 0:
-        update.message.reply_text("⚠️ ADMIN_ID تنظیم نشده!")
+        await update.message.reply_text("⚠️ لطفاً ابتدا ADMIN_ID را تنظیم کنید!")
         return
         
     if user_id != ADMIN_ID:
-        update.message.reply_text("⛔ دسترسی ندارید!")
+        await update.message.reply_text("⛔ دسترسی ندارید!")
         return
     
     text = update.message.text
-    update.message.reply_text(f"📩 دریافت شد: {text[:50]}...")
-
-def error(update, context):
-    """لاگ کردن خطاها"""
-    logger.warning(f'خطا برای کاربر {update.effective_user.id}: {context.error}')
+    await update.message.reply_text(f"📩 دریافت شد: {text[:50]}...\n\n✅ ربات آماده است!")
 
 def main():
     """تابع اصلی"""
@@ -45,26 +41,18 @@ def main():
         print("❌ BOT_TOKEN تنظیم نشده!")
         return
     
-    # ساخت آپدیت‌کننده برای نسخه ۱۳.۷
-    updater = Updater(BOT_TOKEN)
-    
-    # گرفتن دیسپچر
-    dp = updater.dispatcher
+    # ساخت اپلیکیشن
+    app = Application.builder().token(BOT_TOKEN).build()
     
     # اضافه کردن هندلرها
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(filters.Filters.text, handle_message))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT, handle_message))
     
-    # مدیریت خطا
-    dp.add_error_handler(error)
-    
-    print(f"🤖 ربات در حال اجرا... ADMIN_ID: {ADMIN_ID}")
+    print(f"🤖 ربات در حال اجرا...")
+    print(f"📊 ADMIN_ID: {ADMIN_ID}")
     
     # شروع پولینگ
-    updater.start_polling()
-    
-    # اجرا تا Ctrl+C
-    updater.idle()
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
