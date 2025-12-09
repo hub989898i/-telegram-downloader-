@@ -1,8 +1,7 @@
 import os
 import logging
-import asyncio
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 # تنظیمات
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -16,14 +15,15 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+logger = logging.getLogger(__name__)
 
-def start(update: Update, context):
+def start(update, context):
     """دستور /start"""
     update.message.reply_text("🤖 ربات فعال شد! لینک بفرستید.")
 
-def handle_message(update: Update, context):
+def handle_message(update, context):
     """پردازش پیام"""
-    user_id = update.effective_user.id
+    user_id = update.message.from_user.id
     
     if ADMIN_ID == 0:
         update.message.reply_text("⚠️ ADMIN_ID تنظیم نشده!")
@@ -36,21 +36,28 @@ def handle_message(update: Update, context):
     text = update.message.text
     update.message.reply_text(f"📩 دریافت شد: {text[:50]}...")
 
+def error(update, context):
+    """لاگ کردن خطاها"""
+    logger.warning(f'خطا برای کاربر {update.effective_user.id}: {context.error}')
+
 def main():
     """تابع اصلی"""
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN تنظیم نشده!")
         return
     
-    # ساخت آپدیت‌کننده
-    updater = Updater(BOT_TOKEN, use_context=True)
+    # ساخت آپدیت‌کننده برای نسخه ۱۳.۷
+    updater = Updater(BOT_TOKEN)
     
     # گرفتن دیسپچر
     dp = updater.dispatcher
     
     # اضافه کردن هندلرها
     dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(filters.TEXT, handle_message))
+    dp.add_handler(MessageHandler(Filters.text, handle_message))
+    
+    # مدیریت خطا
+    dp.add_error_handler(error)
     
     print(f"🤖 ربات در حال اجرا... ADMIN_ID: {ADMIN_ID}")
     
